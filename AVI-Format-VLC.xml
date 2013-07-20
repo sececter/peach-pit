@@ -182,13 +182,15 @@
 
     <Agent name="WinAgent">
         <Monitor class="WindowsDebugger">
-            <Param name="CommandLine" value="c:\\mplayer\\mplayer.exe fuzzed.wav" />
+            <Param name="CommandLine" value="c:\\Program Files\\VideoLAN\\VLC\\vlc.exe C:\\sample.avi" />
             <Param name="StartOnCall" value="StartVictim" />
-            <Param name="CpuKill" value="true"/>
+            <Param name="NoCpuKill" value="true" />
+            <Param name="RestartOnEachTest" value="true" />
+            <Param name="WaitForExitTimeout" value="40000" />
         </Monitor>
 
         <Monitor class="PageHeap">
-            <Param name="Executable" value="c:\\mplayer\\mplayer.exe"/>
+            <Param name="Executable" value="c:\\Program Files\\VideoLAN\\VLC\\vlc.exe"/>
         </Monitor>
     </Agent>
     
@@ -196,7 +198,7 @@
         <Agent ref="WinAgent" platform="windows"/>
         <StateModel ref="States" />
         <Publisher class="File">
-            <Param name="FileName" value="fuzzed.avi"/>
+            <Param name="FileName" value="C:\\sample.avi"/>
         </Publisher>
         <Logger class="Filesystem">
             <Param name="Path" value="logs" />
