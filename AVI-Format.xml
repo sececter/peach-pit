@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Peach xmlns="http://peachfuzzer.com/2012/Peach" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://peachfuzzer.com/2012/Peach ../peach.xsd">
+
+    <!-- http://msdn.microsoft.com/en-us/library/dd318189%28v=vs.85%29.aspx -->
+    <!-- http://msdn.microsoft.com/en-us/library/ff625868%28v=vs.85%29.aspx -->
+
+    <Defaults>
+        <Number endian="little" signed="false" />
+    </Defaults>
+    
+    <DataModel name="BITMAPINFO">
+        <Number name="biSize" size="32" />
+        <Number name="biWidth" size="32" signed="true"/>
+        <Number name="biHeight" size="32" signed="true"/>
+        <Number name="biPlanes" size="16" />
+        <Number name="biBitCount" size="16" />
+        <Number name="biCompression" size="32" />
+        <Number name="biSizeImage" size="32" />
+        <Number name="biXPelsPerMeter" size="32" signed="true"/>
+        <Number name="biYPelsPerMeter" size="32" signed="true"/>
+        <Number name="biClrUsed" size="32" />
+        <Number name="biClrImportant" size="32" />
+    </DataModel>
+    
+    <DataModel name="WAVEFORMATEX">
+        <Number name="wFormatTag" size="16" />
+        <Number name="nChannels" size="16" />
+        <Number name="nSamplesPerSec" size="32" />
+        <Number name="nAvgBytesPerSec" size="32" />
+        <Number name="nBlockAlign" size="16" />
+        <Number name="wBitsPerSample" size="16" />
+        <!-- Number name="cbSize" size="16" / -->
+    </DataModel>
+    
+    <DataModel name="ChunkModel">
+        <String name="fourCC" length="4" />
+        <Number name="size" size="32">
+            <Relation type="size" of="chunkData" />
+        </Number>
+        <Blob name="chunkData" />
+        <Padding alignment="16" />
+    </DataModel>
+
+    <DataModel name="ListModel" ref="ChunkModel">
+        <String name="fourCC" value="LIST" token="true" />
+    </DataModel>
+
+    <DataModel name="RiffHeaderModel">
+        <String name="fourCC" value="RIFF" token="true" />
+        <Number name="size" size="32" /><!-- Add relation -->
+        <String name="type" value="AVI " token="true" />
+    </DataModel>
+
+    <DataModel name="JunkChunkModel" ref="ChunkModel">
+        <String name="fourCC" value="JUNK" token="true"/>
+    </DataModel>
+
+    <DataModel name="MainAviHeaderModel" ref="ChunkModel">
+        <String name="fourCC" value="avih" token="true" />
+        <Block name="chunkData">
+            <Number name="dwMicroSecPerFrame" size="32" />
+            <Number name="dwMaxBytesPerSec" size="32" />
+            <Number name="dwPaddingGranularity" size="32" />
+            <Number name="dwFlags" size="32" />
+            <Number name="dwTotalFrames" size="32" />
+            <Number name="dwInitialFrames" size="32" />
+            <Number name="dwStreams" size="32" />
+            <Number name="dwSuggestedBufferSize" size="32" />
+            <Number name="dwWidth" size="32" />
+            <Number name="dwHeight" size="32" />
+            <Number name="dwScale" size="32" />
+            <Number name="dwRate" size="32" />
+            <Number name="dwStart" size="32" />
+            <Number name="dwLength" size="32" />
+        </Block>
+    </DataModel>
+
+    <DataModel name="StreamHeaderChunkModel" ref="ChunkModel">
+        <String name="fourCC" value="strh" token="true" />
+        <Block name="chunkData">
+            <String name="fccType" length="4" />
+            <String name="fccHandler" length="4" />
+            <Number name="dwFlags" size="32" />
+            <Number name="wPriority" size="16" />
+            <Number name="wLanguage" size="16" />
+            <Number name="dwInitialFrames" size="32" />
+            <Number name="dwScale" size="32" />
+            <Number name="dwRate" size="32" />
+            <Number name="dwStart" size="32" />
+            <Number name="dwLength" size="32" />
+            <Number name="dwSuggestedBufferSize" size="32" />
+            <Number name="dwQuality" size="32" />
+            <Number name="dwSampleSize" size="32" />
+            <Number name="rcFrame" size="64" />
+        </Block>
+    </DataModel>
+    
+    <DataModel name="StreamFormatChunkModel" ref="ChunkModel">
+        <String name="fourCC" value="strf" token="true" />
+        <Block name="chunkData">
+            <Choice maxOccurs="1">
+                <Block name="bitmap" ref="BITMAPINFO" />
+                <Block name="wave" ref="WAVEFORMATEX" />
+            </Choice>
+        </Block>
+    </DataModel>
+
+    <DataModel name="StreamHeaderDataChunkModel" ref="ChunkModel">
+        <String name="fourCC" value="strd" token="true" />
+    </DataModel>
+    
+    <DataModel name="StreamNameChunkModel" ref="ChunkModel">
+        <String name="fourCC" value="strn" token="true" />
+        <Block name="chunkData">
+            <String name="name" nullTerminated="true" />
+        </Block>
+    </DataModel>
+    
+    <DataModel name="StreamHeaderListModel" ref="ListModel">
+        <Block name="chunkData">
+            <String name="type" value="strl" token="true" />
+            <Block name="strh" ref="StreamHeaderChunkModel" />
+            <Block name="strf" ref="StreamFormatChunkModel" />
+            <Block name="strd" ref="StreamHeaderDataChunkModel" minOccurs="0" />
+            <Block name="strn" ref="StreamNameChunkModel" minOccurs="0" />
+            <Block name="junk" ref="JunkChunkModel" minOccurs="0" />
+        </Block>
+    </DataModel>
+
+    <DataModel name="AviHeaderListModel" ref="ListModel">
+        <Block name="chunkData">
+            <String name="type" value="hdrl" token="true" />
+            <Block name="avih" ref="MainAviHeaderModel" />
+            <Block name="strl" ref="StreamHeaderListModel" minOccurs="1" maxOccurs="1024" />
+            <Choice minOccurs="0" maxOccurs="1024">
+                <Block name="extraL" ref="ListModel" />
+                <Block name="extraC" ref="ChunkModel" />
+            </Choice>
+        </Block>
+    </DataModel>
+
+    <DataModel name="AviMovieListModel" ref="ListModel">
+        <Block name="chunkData">
+            <String name="type" value="movi" token="true"/>
+            <Block ref="ChunkModel" maxOccurs="10000000" />
+        </Block>
+    </DataModel>
+    
+    <DataModel name="Avi1IndexModel" ref="ChunkModel">
+        <String name="fourCC" value="idx1" token="true" />
+        <Block name="chunkData">
+            <Block maxOccurs="10000000">
+                <String name="chunkId" length="4" />
+                <Number name="flags" size="32" />
+                <Number name="offset" size="32" />
+                <Number name="size" size="32" />
+            </Block>
+        </Block>
+    </DataModel>
+
+    <DataModel name="AviFileModel">
+        <Block name="riff" ref="RiffHeaderModel" />
+        <Block name="hdrl" ref="AviHeaderListModel" />
+        <Block ref="JunkChunkModel" minOccurs="0" />
+        <Block name="movi" ref="AviMovieListModel" />
+        <Block ref="JunkChunkModel" minOccurs="0" />
+        <Block name="index" ref="Avi1IndexModel" minOccurs="0" maxOccurs="1" />
+    </DataModel>
+    
+    <StateModel name="States" initialState="initial">
+        <State name="initial">
+            <Action type="output">
+                <DataModel ref="AviFileModel" />
+                <Data fileName="..\\samples\\avi\\sample2.avi" />
+            </Action>
+            <Action type="close" />
+            
+        </State>
+    </StateModel>
+
+    <Agent name="WinAgent">
+        <Monitor class="WindowsDebugger">
+            <Param name="CommandLine" value="c:\\mplayer\\mplayer.exe fuzzed.wav" />
+            <Param name="StartOnCall" value="StartMPlayer" />
+            <Param name="CpuKill" value="true"/>
+        </Monitor>
+
+        <Monitor class="PageHeap">
+            <Param name="Executable" value="c:\\mplayer\\mplayer.exe"/>
+        </Monitor>
+    </Agent>
+    
+    <Test name="Default">
+        <Agent ref="WinAgent" platform="windows"/>
+        <StateModel ref="States" />
+        <Publisher class="File">
+            <Param name="FileName" value="fuzzed.avi"/>
+        </Publisher>
+        <Logger class="Filesystem">
+            <Param name="Path" value="logs" />
+        </Logger>
+    </Test>
+</Peach>
